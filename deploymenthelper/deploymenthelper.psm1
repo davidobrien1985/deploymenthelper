@@ -16,11 +16,11 @@ Function Read-Artifactory {
   param (
     [string]$pathToArtifact,
     [string]$outputPath,
-    [Parameter(ParameterSetName="useSSM")]
+    [Parameter(ParameterSetName = "useSSM")]
     [switch]$useSsm,
-    [Parameter(ParameterSetName="noSSM")]
+    [Parameter(ParameterSetName = "noSSM")]
     [string]$ARTIFACTORY_API_KEY,
-    [Parameter(ParameterSetName="noSSM")]
+    [Parameter(ParameterSetName = "noSSM")]
     [string]$ARTIFACTORY_HOST
   )
 
@@ -89,4 +89,44 @@ Function Install-AwsCloudwatchConfig {
 
   Write-Verbose 'Restarting the Amazon SSM Agent...'
   Restart-Service -Name AmazonSSMAgent
+}
+
+Function Get-AwsCloudFormationStackName {
+  <#
+  .SYNOPSIS
+    Gets AWS Cloudformation Stack Name
+  .DESCRIPTION
+    Executed on an AWS Windows EC2 this will return the name of the Cloudformation Stack that this EC2 is part of
+  .EXAMPLE
+    PS C:\> Get-AwsCloudFormationStackName
+    Will return the AWS Cloudformation Stack name
+  .INPUTS
+    Inputs (if any)
+  .OUTPUTS
+    String of AWS Cloudformation Stack name
+  .NOTES
+    Only works on an AWS EC2
+  #>
+  $instanceId = (New-Object System.Net.WebClient).DownloadString("http://169.254.169.254/latest/meta-data/instance-id")
+  (Get-EC2Tag -Region $(Get-AWSEc2Region) | Where-Object {$_.ResourceId -eq $instanceId} | Where-Object {$_.Key -eq 'aws:cloudformation:stack-name'}).Value
+}
+
+Function Get-AWSEc2Region {
+  <#
+  .SYNOPSIS
+    Gets AWS Region from EC2
+  .DESCRIPTION
+    Executed on an AWS Windows EC2 this will return the AWS Region the EC2 is deployed to.
+  .EXAMPLE
+    PS C:\> Get-AwsEc2Region
+    Will return the AWS Region name
+  .INPUTS
+    Inputs (if any)
+  .OUTPUTS
+    String of AWS Region name
+  .NOTES
+    Only works on an AWS EC2
+  #>
+  $doc = (Invoke-WebRequest 169.254.169.254/latest/dynamic/instance-identity/document).Content | ConvertFrom-Json
+  $doc.region
 }
