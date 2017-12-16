@@ -130,3 +130,46 @@ Function Get-AWSEc2Region {
   $doc = (Invoke-WebRequest 169.254.169.254/latest/dynamic/instance-identity/document).Content | ConvertFrom-Json
   $doc.region
 }
+
+Function Test-SQLDBExists {
+  <#
+  .SYNOPSIS
+    Test if SQL DB exists
+  .DESCRIPTION
+    Tests for existence of a MS SQL database and returns boolean true or false
+  .EXAMPLE
+    PS C:\> Test-SQLDBExists -sqlServer sql01 -DBName customers
+    Tests if a database with name "customers" exists on server SQL01
+  .INPUTS
+    Inputs (if any)
+  .OUTPUTS
+    boolean true or false
+  .NOTES
+    Requires Microsoft.SqlServer.Management.Smo.Server
+  #>
+  param (
+    [string]$sqlServer,
+    [string]$DBName
+  )
+
+  $exists = $false
+  try {
+    # we set this to null so that nothing is displayed
+    $null = [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo")
+
+    # Get reference to database instance
+    $server = New-Object ("Microsoft.SqlServer.Management.Smo.Server") $sqlServer
+
+    foreach ($db in $server.databases) {
+      Write-Host $db.name
+      if ($db.name -eq $DBName) {
+        $exists = $true
+      }
+    }
+  }
+  catch {
+    Write-Error "Failed to connect to $sqlServer"
+  }
+  Write-Host $exists
+  return $exists
+}
